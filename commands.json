@@ -1,0 +1,14 @@
+[
+  {
+    "name": "play",
+    "description": "Play a song",
+    "options": [
+      {
+        "type": 3,
+        "name": "song",
+        "description": "Song name",
+        "required": true
+      }
+    ]
+  }
+]
