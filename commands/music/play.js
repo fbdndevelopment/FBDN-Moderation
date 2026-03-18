@@ -3,6 +3,8 @@ const {
   joinVoiceChannel,
   createAudioPlayer,
   createAudioResource,
+  entersState,
+  VoiceConnectionStatus,
   AudioPlayerStatus
 } = require("@discordjs/voice");
 
@@ -30,6 +32,7 @@ module.exports = {
     await interaction.deferReply();
 
     try {
+      // 🔍 Search
       const search = await yts(query);
 
       if (!search.videos.length) {
@@ -38,6 +41,17 @@ module.exports = {
 
       const video = search.videos[0];
 
+      // 🎧 Join VC
+      const connection = joinVoiceChannel({
+        channelId: voiceChannel.id,
+        guildId: interaction.guild.id,
+        adapterCreator: interaction.guild.voiceAdapterCreator
+      });
+
+      // ✅ WAIT UNTIL READY (IMPORTANT FIX)
+      await entersState(connection, VoiceConnectionStatus.Ready, 20000);
+
+      // 🎵 Stream
       const stream = ytdl(video.url, {
         filter: "audioonly",
         quality: "highestaudio",
@@ -47,12 +61,6 @@ module.exports = {
       const resource = createAudioResource(stream);
       const player = createAudioPlayer();
 
-      const connection = joinVoiceChannel({
-        channelId: voiceChannel.id,
-        guildId: interaction.guild.id,
-        adapterCreator: interaction.guild.voiceAdapterCreator
-      });
-
       connection.subscribe(player);
       player.play(resource);
 
@@ -60,15 +68,15 @@ module.exports = {
         console.log("🎵 Playing:", video.title);
       });
 
-      player.on("error", err => {
-        console.error("Player error:", err);
+      player.on("error", error => {
+        console.error("Player error:", error);
       });
 
-      interaction.editReply(`🎵 Now playing: **${video.title}**`);
+      await interaction.editReply(`🎵 Now playing: **${video.title}**`);
 
     } catch (err) {
-      console.error("ERROR:", err);
-      interaction.editReply("❌ Error playing song.");
+      console.error("FULL ERROR:", err);
+      await interaction.editReply("❌ Error playing song.");
     }
   }
 };
