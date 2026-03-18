@@ -1,62 +1,53 @@
 const { Client, GatewayIntentBits } = require("discord.js");
-const {
-  joinVoiceChannel,
-  createAudioPlayer,
-  createAudioResource
-} = require("@discordjs/voice");
+const { DisTube } = require("distube");
+const { YtDlpPlugin } = require("@distube/ytdl-core");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates]
 });
 
-client.once("ready", () => {
-  console.log(`Logged in as ${client.user.tag}`);
+// 🎵 DisTube setup
+const distube = new DisTube(client, {
+  plugins: [new YtDlpPlugin()],
 });
 
+client.once("ready", () => {
+  console.log(`✅ Logged in as ${client.user.tag}`);
+});
+
+// 🎧 Slash command handler
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName === "play") {
-    const query = interaction.options.getString("song");
-    const voiceChannel = interaction.member.voice.channel;
+    const song = interaction.options.getString("song");
+    const vc = interaction.member.voice.channel;
 
-    if (!voiceChannel) {
+    if (!vc) {
       return interaction.reply("❌ Join a voice channel first.");
     }
 
-    await interaction.deferReply();
-
     try {
-      const connection = joinVoiceChannel({
-        channelId: voiceChannel.id,
-        guildId: interaction.guild.id,
-        adapterCreator: interaction.guild.voiceAdapterCreator
+      await interaction.reply(`🎵 Loading: **${song}**`);
+      distube.play(vc, song, {
+        member: interaction.member,
+        textChannel: interaction.channel,
       });
-
-      const result = await play.search(query, { limit: 1 });
-
-      if (!result.length) {
-        return interaction.editReply("❌ No results found.");
-      }
-
-      const url = result[0].url;
-
-      const stream = await play.stream(url);
-      const resource = createAudioResource(stream.stream, {
-        inputType: stream.type
-      });
-
-      const player = createAudioPlayer();
-      connection.subscribe(player);
-      player.play(resource);
-
-      interaction.editReply(`🎵 Now playing: **${result[0].title}**`);
-
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
       interaction.editReply("❌ Error playing song.");
     }
   }
+});
+
+// 🎵 Events
+distube.on("playSong", (queue, song) => {
+  queue.textChannel.send(`🎵 Now playing: **${song.name}**`);
+});
+
+distube.on("error", (channel, error) => {
+  console.error("DisTube error:", error);
+  channel.send("❌ Error playing song.");
 });
 
 client.login(process.env.TOKEN);
