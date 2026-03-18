@@ -4,7 +4,6 @@ const {
   createAudioPlayer,
   createAudioResource
 } = require("@discordjs/voice");
-const play = require("play-dl");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates]
