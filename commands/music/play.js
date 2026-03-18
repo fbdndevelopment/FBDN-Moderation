@@ -32,14 +32,14 @@ module.exports = {
     await interaction.deferReply();
 
     try {
-      // 🔍 Search
-      const search = await yts(query);
+      // 🔍 Search YouTube
+      const result = await yts(query);
 
-      if (!search.videos.length) {
+      if (!result.videos.length) {
         return interaction.editReply("❌ No results found.");
       }
 
-      const video = search.videos[0];
+      const video = result.videos[0];
 
       // 🎧 Join VC
       const connection = joinVoiceChannel({
@@ -48,10 +48,10 @@ module.exports = {
         adapterCreator: interaction.guild.voiceAdapterCreator
       });
 
-      // ✅ WAIT UNTIL READY (IMPORTANT FIX)
-      await entersState(connection, VoiceConnectionStatus.Ready, 20000);
+      // ✅ WAIT until ready (IMPORTANT)
+      await entersState(connection, VoiceConnectionStatus.Ready, 15000);
 
-      // 🎵 Stream
+      // 🎵 Get stream
       const stream = ytdl(video.url, {
         filter: "audioonly",
         quality: "highestaudio",
@@ -65,7 +65,7 @@ module.exports = {
       player.play(resource);
 
       player.on(AudioPlayerStatus.Playing, () => {
-        console.log("🎵 Playing:", video.title);
+        console.log("Playing:", video.title);
       });
 
       player.on("error", error => {
@@ -74,8 +74,8 @@ module.exports = {
 
       await interaction.editReply(`🎵 Now playing: **${video.title}**`);
 
-    } catch (err) {
-      console.error("FULL ERROR:", err);
+    } catch (error) {
+      console.error("PLAY ERROR:", error);
       await interaction.editReply("❌ Error playing song.");
     }
   }
